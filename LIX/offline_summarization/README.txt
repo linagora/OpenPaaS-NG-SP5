@@ -1,0 +1,1 @@
+# the application has been temporarily deployed here: https://safetyapp.shinyapps.io/meet_summ_proto/

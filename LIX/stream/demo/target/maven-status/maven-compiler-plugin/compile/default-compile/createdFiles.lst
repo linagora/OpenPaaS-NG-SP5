@@ -1,0 +1,13 @@
+gr/aueb/structures/Wikipedia.class
+gr/aueb/service/EmailService.class
+gr/aueb/service/WikipediaService.class
+gr/aueb/demo/PropertyRegistryBean.class
+gr/aueb/structures/Email.class
+gr/aueb/demo/WikipediaView.class
+gr/aueb/demo/StackOverflowView.class
+gr/aueb/service/StackOverflowService.class
+gr/aueb/demo/EmailView.class
+gr/aueb/demo/PropertyRegistryBean$RunMeTask.class
+gr/aueb/structures/QuestionItems.class
+gr/aueb/demo/Demo.class
+gr/aueb/structures/StackOverflow.class

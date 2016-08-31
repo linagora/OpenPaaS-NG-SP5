@@ -1,0 +1,102 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://java.sun.com/jsf/core"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:p="http://primefaces.org/ui">
+    <h:head>
+        <title>Demo intergration site</title>
+    </h:head>
+    <h:body>
+        <script type="text/javascript">
+            var timeout = setTimeout("location.reload(true);", 100000);
+            function resetTimeout() {
+                clearTimeout(timeout);
+                timeout = setTimeout("location.reload(true);", 100000);
+            }
+        </script>
+        <p:layout  id="layout" fullPage="true" >
+
+            <p:layoutUnit id="top" position="north" size="50" style="border: 0;" ><b>openPaas Demo</b></p:layoutUnit>
+
+
+            <p:layoutUnit id="left" style="border: 0;" position="west" size="300">
+
+                <h:form>
+                    <p:growl id="msgs" showDetail="true" />
+                    <p:tagCloud model="#{demo.model}">
+                        <p:ajax event="select" update="msgs" listener="#{demo.onSelect}" />
+                    </p:tagCloud>
+                </h:form>
+
+            </p:layoutUnit>
+
+
+            <p:layoutUnit id="center" position="center" style="border: 0;">
+                <p:layout style="border: 0;">
+                    <p:layoutUnit id="inner_north" position="north" style="border: 0;" >
+                        <h:form id="form">
+                            <p:carousel value="#{emailView.emails}" style="min-height:250px;min-width:200px;border: 0;" headerText="Emails" var="email"   itemStyle="text-align:left">
+                                <p:panelGrid columns="2" style="width:100%;height: 250px;margin:0px 0px;border: 0 !important;" columnClasses="label,value"  styleClass="ui-panelgrid-blank">
+
+                                    <h:outputText value="From" />
+                                    <h:outputText value="#{email.from}"/>
+
+                                    <h:outputText value="Date" />
+                                    <h:outputText value="#{email.sentDate}" />
+
+                                    <h:outputText value="Subject" />
+                                    <h:outputText value="#{email.subject}" />
+                                    <p:commandButton update=":form:emailDetail" oncomplete="PF('emailDialog').show()" icon="ui-icon-search">
+                                        <f:setPropertyActionListener value="#{email}" target="#{emailView.selectedEmail}" />
+                                    </p:commandButton>
+                                </p:panelGrid>
+
+
+                            </p:carousel>
+                            <p:dialog header="Email Info" appendTo="@(body)" widgetVar="emailDialog" width="800" height="300" modal="true" showEffect="fade" hideEffect="fade" resizable="false">
+                                <p:outputPanel id="emailDetail" style="text-align:center;top: 50%;left: 50%;">
+                                    <p:panelGrid  columns="2" rendered="#{not empty emailView.selectedEmail}" style="width: 100%;" columnClasses="label,value">
+                                        <h:outputText value="From" />
+                                        <h:outputText value="#{emailView.selectedEmail.from}"/>
+
+                                        <h:outputText value="Date" />
+                                        <h:outputText value="#{emailView.selectedEmail.sentDate}" />
+
+                                        <h:outputText value="Subject" />
+                                        <h:outputText value="#{emailView.selectedEmail.subject}" />
+
+                                        <h:outputText value="Content" />
+                                        <h:outputText value="#{emailView.selectedEmail.content}" />
+
+                                    </p:panelGrid>
+                                </p:outputPanel>
+                            </p:dialog>
+                        </h:form>
+                    </p:layoutUnit>
+                    <p:layoutUnit id="inner_west" position="west" style="min-width:500px;border: 0;" size="100" >
+
+                        <p:dataList value="#{stackOverflowView.questions}" var="question" type="ordered" rows="5">
+                            <f:facet name="header">
+                                StackOverflow
+                            </f:facet>
+                            <a target="_blank" href="#{question.link}">#{question.title}</a>
+                        </p:dataList>
+                    </p:layoutUnit>
+                    <p:layoutUnit id="inner_center" position="center" style="border: 0;" >
+                        <p:dataList value="#{wikipediaView.wikipediaArticles}" var="question" type="ordered"  rows="10">
+                            <f:facet name="header">
+                                Wikipedia
+                            </f:facet>
+                            <a target="_blank" href="#{question.link}">#{question.title}</a>
+
+                        </p:dataList>
+                    </p:layoutUnit>
+                </p:layout>
+            </p:layoutUnit>
+
+        </p:layout>
+    </h:body>
+</html>
+

@@ -12,14 +12,14 @@ import gr.aueb.service.WikipediaService;
 @ViewScoped
 public class WikipediaView implements Serializable {
      
-    private List<Wikipedia> emails;
+    private List<Wikipedia> articles;
     private int size=0; 
     private Wikipedia selectedWikipedia;
      
      
     @PostConstruct
     public void init() {
-        emails = WikipediaService.createWikipediaArticles();
+        articles = WikipediaService.createWikipediaArticles();
     }
  
     public List<Wikipedia> getWikipediaArticles() {

@@ -5,6 +5,8 @@
  */
 package gr.aueb.structures;
 
+import org.jsoup.Jsoup;
+
 /**
  *
  * @author pmeladianos
@@ -21,7 +23,8 @@ public class Email {
         this.from = from;
         this.sentDate = sentDate;
         this.subject = subject;
-        this.content = content;
+        
+        this.content = content;//Jsoup.parse(content).text();;
     }
 
     public String getId() {
@@ -61,7 +64,7 @@ public class Email {
     }
 
     public void setContent(String content) {
-        this.content = content;
+        this.content = Jsoup.parse(content).text();;
     }
     
     

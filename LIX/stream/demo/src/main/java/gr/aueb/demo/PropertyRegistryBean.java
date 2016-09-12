@@ -15,19 +15,33 @@ import gr.aueb.service.WikipediaService;
 import gr.aueb.structures.Email;
 import gr.aueb.structures.StackOverflow;
 import gr.aueb.structures.Wikipedia;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static javax.ejb.ConcurrencyManagementType.BEAN;
 import javax.ejb.Singleton;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.Startup;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
 import org.primefaces.context.RequestContext;
 
 @Singleton
@@ -47,9 +61,20 @@ public class PropertyRegistryBean {
     private static List<StackOverflow> SOquestions;
     private static List<Wikipedia> wikiArticles;
     public static Boolean isInitialized;
+    public static List<String> stop_Words;
+    public static CharArraySet stopSet;
 
     @PostConstruct
     public void applicationStartup() {
+
+        try {
+
+            stop_Words = Files.readAllLines(Paths.get(System.getProperty("user.home")+"/stoplist.txt"));
+            stopSet = new CharArraySet(Version.LUCENE_48, stop_Words, true);
+
+        } catch (IOException ex) {
+            Logger.getLogger(PropertyRegistryBean.class.getName()).log(Level.SEVERE, null, ex);
+        }
         isInitialized = true;
         keywords = new ConcurrentHashMap();
         keywords.put("java", 1);
@@ -65,21 +90,16 @@ public class PropertyRegistryBean {
         TimerTask task = new RunMeTask();
 
         Timer timer = new Timer();
-        timer.schedule(task, 1000, 60000);
+        timer.schedule(task, 0, 30 * 1000);
 
         // this method performs the task
     }
 
     public class RunMeTask extends TimerTask {
 
-        long t0 = System.currentTimeMillis();
-
         @Override
         public void run() {
-            if (System.currentTimeMillis() - t0 > 1000 * 1500) {
-                System.out.println("cancelled");
-                cancel();
-            }
+
             ConcurrentHashMap keywords = new ConcurrentHashMap();
 
             List<String> testWords = new ArrayList<String>();
@@ -88,21 +108,29 @@ public class PropertyRegistryBean {
             testWords.add("programming");
             testWords.add("computer");
             testWords.add("model");
-            testWords.add("algorithm");
-
+            testWords.add("python");
+            testWords.add("css");
+            testWords.add("learning");
+            testWords.add("unix");
             ArrayList<Integer> list = new ArrayList<Integer>();
-            for (int i = 1; i < 6; i++) {
+
+            for (int i = 1; i < 8; i++) {
                 list.add(new Integer(i));
             }
             Collections.shuffle(list);
             for (int i = 0; i < 4; i++) {
                 keywords.put(testWords.get(list.get(i)), list.get(i));
             }
-            System.out.println("Scheduled update");
+            boolean ommitServicesDebugFlag = true;
+            //System.out.println("Scheduled update");
             PropertyRegistryBean.setKeywords(keywords);
-            PropertyRegistryBean.setWikiArticles(WikipediaService.getWikipediaArticles());
-            PropertyRegistryBean.setEmails(EmailService.getEmails());
-            PropertyRegistryBean.setSOquestions(StackOverflowService.getStackOverflowQuestions());
+            PropertyRegistryBean.setEmails(EmailService.getEmails(testWords));
+
+            if (!ommitServicesDebugFlag) {
+                PropertyRegistryBean.setWikiArticles(WikipediaService.getWikipediaArticles());
+                PropertyRegistryBean.setSOquestions(StackOverflowService.getStackOverflowQuestions());
+            }
+
         }
     }
 
@@ -148,6 +176,29 @@ public class PropertyRegistryBean {
 
     public static void setWikiArticles(List<Wikipedia> wikiArticles) {
         PropertyRegistryBean.wikiArticles = wikiArticles;
+    }
+
+    public static String removeStopWords(String textFile) {
+        //CharArraySet stopWords = EnglishAnalyzer.getDefaultStopSet();
+        CharArraySet stopWords = PropertyRegistryBean.stopSet;
+        TokenStream tokenStream = new StandardTokenizer(Version.LUCENE_48, new StringReader(textFile.trim()));
+        tokenStream = new StopFilter(Version.LUCENE_48, tokenStream, stopWords);
+        StringBuilder sb = new StringBuilder();
+        CharTermAttribute charTermAttribute = tokenStream.addAttribute(CharTermAttribute.class);
+        try {
+            tokenStream.reset();
+        } catch (IOException ex) {
+            Logger.getLogger(PropertyRegistryBean.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            while (tokenStream.incrementToken()) {
+                String term = charTermAttribute.toString();
+                sb.append(term + " ");
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(PropertyRegistryBean.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return sb.toString();
     }
 
 }

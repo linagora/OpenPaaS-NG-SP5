@@ -30,8 +30,8 @@ public class EmailService {
         return list;
     }
 
-    public static List<Email> getEmails() {
-        String query = getEmailServiceQuery();
+    public static List<Email> getEmails(List<String> keywords) {
+        String query = getEmailServiceQuery(keywords);
         SolrQuery solrQuery;
         solrQuery = new SolrQuery();
         if (query.startsWith(" AND")) {
@@ -79,9 +79,9 @@ public class EmailService {
         return items;
     }
 
-    private static String getEmailServiceQuery() {
+    private static String getEmailServiceQuery(List<String> keywords) {
         String query = "";
-        for (Object key : PropertyRegistryBean.getKeywords().keySet()) {
+        for (Object key : keywords) {
             String s = key.toString();
             query += s + " OR ";
         }
@@ -102,4 +102,5 @@ public class EmailService {
         return res;
 
     }
+
 }

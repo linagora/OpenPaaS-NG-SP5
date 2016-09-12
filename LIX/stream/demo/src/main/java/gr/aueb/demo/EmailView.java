@@ -7,10 +7,11 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import gr.aueb.structures.Email;
 import gr.aueb.service.EmailService;
+import javax.faces.bean.SessionScoped;
 import org.primefaces.context.RequestContext;
  
 @ManagedBean
-@ViewScoped
+@SessionScoped
 public class EmailView implements Serializable {
      
     private List<Email> emails;

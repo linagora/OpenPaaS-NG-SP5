@@ -1,5 +1,5 @@
 cleaning_transcript <-
-function(my_transcript_df, time_prune, custom = custom, pos, to_stem, overlap_threshold){
+function(my_transcript_df, time_prune, custom = custom, pos, to_stem, overlap_threshold, detected_language){
   
   # - time_prune: duration in seconds below which utterances are considered uninformative and are removed
   # - custom: character vector of stopwords to remove
@@ -20,9 +20,9 @@ function(my_transcript_df, time_prune, custom = custom, pos, to_stem, overlap_th
   # clean text column - keep an unprocessed version for distance computation when building the gows
   text_my_transcript_df = as.character(my_transcript_df[,"text"])
   
-  text_my_transcript_df_cleaned_processed = lapply(text_my_transcript_df, function(x){unlist(cleaning_meeting_text(X=x, custom=custom,pos=pos,stem=to_stem)$processed)})
+  text_my_transcript_df_cleaned_processed = lapply(text_my_transcript_df, function(x){unlist(cleaning_meeting_text(X=x, custom=custom,pos=pos,stem=to_stem, detected_language=detected_language, remove_single=TRUE)$processed)})
   
-  text_my_transcript_df_cleaned_unprocessed = lapply(text_my_transcript_df, function(x){unlist(cleaning_meeting_text(X=x, custom="",pos=FALSE,stem=FALSE)$unprocessed)})
+  text_my_transcript_df_cleaned_unprocessed = lapply(text_my_transcript_df, function(x){unlist(cleaning_meeting_text(X=x, custom="",pos=FALSE,stem=FALSE, detected_language=detected_language, remove_single=FALSE)$unprocessed)})
   
   # find indexes of empty elements in processed vector
   index_empty = lapply(1:length(text_my_transcript_df_cleaned_processed),function(x){if(length(text_my_transcript_df_cleaned_processed[[x]])==0){return(x)}})

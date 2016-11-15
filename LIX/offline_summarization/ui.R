@@ -31,6 +31,13 @@ titlePanel("Offline Meeting Speech Summarization Prototype"),
 			
 	),
 	
+	fluidRow(
+	
+      textOutput("detected_language")
+	  
+    ),
+	br(),
+	
 fluidRow(
 	tabsetPanel(
 	
@@ -162,7 +169,7 @@ wordcloud2Output("wordcloud")
 )),
 fluidRow(
 column(10,
-metricsgraphicsOutput('keywords_barplot',width = "50%", height = "800px")
+metricsgraphicsOutput('keywords_barplot',width="50%", height="800px")
 ))
 			
 		)
@@ -172,7 +179,8 @@ metricsgraphicsOutput('keywords_barplot',width = "50%", height = "800px")
 
 		
 	fluidRow(
-		h5("Created by", a("DaSciM",href = "http://www.lix.polytechnique.fr/dascim/",target="_blank"), " with", a("RShiny",href = "http://shiny.rstudio.com/",target="_blank"),a("hash",href = "https://cran.r-project.org/web/packages/hash/index.html",target="_blank"),a("stringr",href = "https://cran.r-project.org/web/packages/stringr/vignettes/stringr.html",target="_blank"),a("SnowballC",href = "https://cran.r-project.org/web/packages/SnowballC/index.html",target="_blank"),a("igraph",href = "http://igraph.org/r/",target="_blank"),a("wordcloud2",href = "https://cran.rstudio.com/web/packages/wordcloud2/",target="_blank"), "and", a("metricsgraphics",href ="https://cran.r-project.org/web/packages/metricsgraphics/index.html",target="_blank"))
+		h5("Created by", a(" Antoine Tixier",href = "http://www.lix.polytechnique.fr/Labo/Antoine.Tixier/",target="_blank"), "for", a("DaSciM",href = "http://www.lix.polytechnique.fr/dascim/",target="_blank"), " with", a("RShiny",href = "http://shiny.rstudio.com/",target="_blank"),a("hash",href = "https://cran.r-project.org/web/packages/hash/index.html",target="_blank"),a("stringr",href = "https://cran.r-project.org/web/packages/stringr/vignettes/stringr.html",target="_blank"),a("SnowballC",href = "https://cran.r-project.org/web/packages/SnowballC/index.html",target="_blank"),a("igraph",href = "http://igraph.org/r/",target="_blank"),a("wordcloud2",href = "https://cran.rstudio.com/web/packages/wordcloud2/",target="_blank"), "and", a("metricsgraphics",href ="https://cran.r-project.org/web/packages/metricsgraphics/index.html",target="_blank")),
+		br(),
+		em("Last updated: November 2016 (added support for French and implemented minor improvements)")
 	)
-	
 ))

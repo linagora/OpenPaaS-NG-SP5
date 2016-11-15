@@ -1,5 +1,12 @@
 cleaning_meeting_text <-
-function(X, custom, pos, stem) {
+function(X, custom, pos, stem, detected_language, remove_single) {
+    
+	# if English, uses Porter's stemmer
+    if (detected_language == 'french') {
+		language_stemmer = 'french'
+	} else if (detected_language == 'english') {
+		language_stemmer = 'porter'
+	}
   
 	# remove between word dashes
 	x = gsub("- ", " ", X, perl = TRUE) 
@@ -30,14 +37,25 @@ function(X, custom, pos, stem) {
 	# make a copy of tokens without further preprocessing
 	xx = unlist(strsplit(x, split=" "))
 
-	# remove stopwords
-    index_stopwords = which(xx%in%custom)
-  
-  if(length(index_stopwords)>0){
+    # remove stopwords
+    stopwords_bis = paste0("\\<",custom,"\\>")
     
-    x = xx[-index_stopwords]
+    x = unlist(lapply(x, function(elt){
+      for (i in 1:length(stopwords_bis)){
+        elt = gsub(stopwords_bis[i]," ",elt)
+      }
+      return(elt)
+    }))
     
-  }
+    # remove extra whitespace, leading and trailing whitespace
+    x = unlist(lapply(x, function(elt){
+      elt = str_trim(elt,"both")
+      elt = gsub("\\s+"," ",elt)
+      return(elt)
+    }
+    ))
+    
+    x = unlist(strsplit(x, split=" "))
 
     if (length(x)>0){
       
@@ -53,24 +71,40 @@ function(X, custom, pos, stem) {
 	}
 
 	if (stem == TRUE){
-		x = wordStem(x)
-		xx = wordStem(xx)
+		x = wordStem(x, language = language_stemmer)
+		xx = wordStem(xx, language = language_stemmer)
 	}
 
       }
     }
     
-    # remove blanks or one letter elements
-    index = c(which(x==""),which(nchar(x)<2))
-    if (length(index)>0){
-      x = x[-index]
-    }
-    
-    index = c(which(xx==""),which(nchar(xx)<2))
-    if (length(index)>0){
-      xx = xx[-index]
-    }
+	if (detected_language == 'english'){
+	
+	# remove blanks and one letter elements
+		index = c(which(x==""),which(nchar(x)<2))
+		if (length(index)>0){
+		  x = x[-index]
+		}
+	
+	} else if (detected_language == 'french'){
+	
+	if (remove_single == TRUE){
+	    # remove blanks and one letter elements
+		index = c(which(x==""),which(nchar(x)<2))
+		if (length(index)>0){
+		  x = x[-index]
+		}
 
+	} else if (remove_single == FALSE){
+		# remove only blanks
+		index = which(x=="")
+		if (length(index)>0){
+		  x = x[-index]
+		}
+	}
+	
+	}
+    
 	output = list(unprocessed=xx, processed=x)
 
 }

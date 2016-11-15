@@ -2,11 +2,14 @@
 ##### packages #######
 ######################
 library(stringr)
+library(textcat)
 library(SnowballC)
 library(igraph)
 library(hash)
 library(wordcloud2)
 library(metricsgraphics)
+# not cited at the bottom of the page cause part of base R
+library(tools)
 
 ######################
 ##### functions ######
@@ -27,7 +30,7 @@ source("from_terms_to_summary.R")
 source("heapify.R")
 source("keyword_extraction.R")
 source("keyword_extraction_inner.R")
-# source("sentence_selection_greedy.R")
+source("sentence_selection_greedy.R")
 source("string_join.R")
 source("utterance_collapse.R")
 source("best_level_density.R")
@@ -38,10 +41,10 @@ source("overlap_html.R")
 overall_wd = getwd()
 
 # load stopwords
-custom_stopwords = read.csv("custom_stopwords_full.csv",header=FALSE,stringsAsFactors = FALSE)[,1]
+custom_stopwords = read.csv('custom_stopwords_full.csv',header=FALSE,stringsAsFactors = FALSE)[,1]
 
 # load filler words
-filler_words = read.csv("filler_words.csv",header=FALSE,stringsAsFactors = FALSE)[,1]
+filler_words = read.csv('filler_words.csv',header=FALSE,stringsAsFactors = FALSE)[,1]
 golden_names = list.files(paste0("./golden_summaries/"))
 
 shinyServer(function(input, output) {
@@ -53,20 +56,18 @@ shinyServer(function(input, output) {
            
            "ICSI_corpus" = selectInput("input_data", label = "Select ICSI test set meeting", choices = c("Bed004","Bed009","Bed016", "Bmr005","Bmr019","Bro018"),selected = "Bed004"),
            
-           "custom" =   fileInput("input_data", label = h5("Upload a .csv file with headers: 'start', 'end', 'role', 'text'", a("(see example)",href = "https://github.com/Tixierae/examples/blob/master/example_input.csv", target="_blank")),
-                                  accept=c('text/csv'))
+           "custom" =   fileInput("input_data", label = h5("Upload a .csv file or space separated .txt file with headers: `start', `end', `role', `text'", a("(example in English)",href = "https://github.com/Tixierae/examples/blob/master/example_input.csv", target="_blank"),a("(example in French)",href = "https://github.com/Tixierae/examples/blob/master/asr_info_french.txt", target="_blank")),accept=c('text/csv','text/plain'))
     )  
     
   })
   
-  
   prelude = reactive({
     
-    dir.create("./rouge2.0-distribution/test-summarization/reference",recursive=T)
+    if (input$corpus!="custom"){
+	
+	dir.create("./rouge2.0-distribution/test-summarization/reference",recursive=T)
     dir.create("./rouge2.0-distribution/test-summarization/system")
     
-    if (input$corpus!="custom"){
-      
       boolean = FALSE
       
       meeting_name = input$input_data
@@ -106,20 +107,48 @@ shinyServer(function(input, output) {
   
   initial = eventReactive(input$goButton,{
     
-    
     withProgress({
       setProgress(message = "Loading text...")
       
       boolean = isolate(prelude()$boolean)
       
       if (boolean==TRUE){
+        # that is, if a custom .csv or space separated .txt file has been passed
         
         # input file needs be in proper format
         # there is nothing to write to the ROUGE directory in that case
         
         to_pass = isolate(input$input_data$datapath)
+		
+		#asr_info = read.csv(to_pass, header=TRUE)
+		
+		 if (file_ext(input$input_data$name) == 'csv'){
         
-        asr_info = read.csv(to_pass, header=TRUE)
+			 asr_info = read.csv(to_pass, header=TRUE)
+		
+		 } else if (file_ext(input$input_data$name) == 'txt'){
+		
+			asr_info = read.table(to_pass, header=TRUE)
+		
+		}
+        
+        # detect language and output the results (in any case)
+        detected_language = textcat(paste(asr_info[,'text'],collapse=' '))
+        
+        # if French, overwrite existing stopwords and filler words
+        if (detected_language=='french') {
+          
+          custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
+          filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
+          
+        } else {
+          
+          if (detected_language!='english') {
+            # if other than French we need to stop and raise a warning
+            detected_language = 'Sorry, only the English and French languages are currently supported.'
+          }
+          
+        }
         
         index_meeting = NA
         golden_summary = NA 
@@ -130,6 +159,8 @@ shinyServer(function(input, output) {
         lambda=5
         
       } else {
+        
+        detected_language='english'
         
         meeting_name = isolate(input$input_data)
         input_corpus = isolate(input$corpus)
@@ -170,41 +201,61 @@ shinyServer(function(input, output) {
       
     }) # end loading text
     
-    
-    withProgress({
-      setProgress(message = "Cleaning text...")
+    if (detected_language %in% c('english','french')){
       
-      cleaned_transcript = cleaning_transcript(my_transcript_df = asr_info, time_prune = 0.85, custom = custom_stopwords, pos=FALSE, to_stem=TRUE, overlap_threshold = 1.5)
-      
-      cleaned_transcript_df = cleaned_transcript$collapse_output
-      cleaned_transcript_df_processed = cleaned_transcript_df$reduced_my_df_proc
-      cleaned_transcript_df_unprocessed = cleaned_transcript_df$reduced_my_df_unproc
-      
-      terms_list = list(processed = from_cleaned_transcript_to_terms_list(cleaned_transcript_df_processed[,4])$terms_list_partial, unprocessed = from_cleaned_transcript_to_terms_list(cleaned_transcript_df_unprocessed[,4])$terms_list_partial)
-      
-      utterances = as.character(cleaned_transcript_df_unprocessed[,4])
-      start_time = cleaned_transcript_df_unprocessed[,1]
-      
-      # prune out utterances that are too short
-      utterances_lengthes = unlist(lapply(utterances, function(x){length(setdiff(unlist(strsplit(tolower(x),split=" ")), custom_stopwords))}))
-      index_remove = which(utterances_lengthes<=3)
-      
-      if (length(index_remove)>0){
+      withProgress({
+        setProgress(message = "Cleaning text...")
         
-        utterances = utterances[-index_remove]
-        start_time = start_time[-index_remove]
+        cleaned_transcript = cleaning_transcript(my_transcript_df = asr_info, time_prune = 0.85, custom = custom_stopwords, pos=FALSE, to_stem=TRUE, overlap_threshold = 1.5, detected_language=detected_language)
         
-      }
+        cleaned_transcript_df = cleaned_transcript$collapse_output
+        cleaned_transcript_df_processed = cleaned_transcript_df$reduced_my_df_proc
+        cleaned_transcript_df_unprocessed = cleaned_transcript_df$reduced_my_df_unproc
+        
+        terms_list = list(processed = from_cleaned_transcript_to_terms_list(cleaned_transcript_df_processed[,4])$terms_list_partial, unprocessed = from_cleaned_transcript_to_terms_list(cleaned_transcript_df_unprocessed[,4])$terms_list_partial)
+        
+        utterances = as.character(cleaned_transcript_df_unprocessed[,4])
+        start_time = cleaned_transcript_df_unprocessed[,1]
+        
+        # prune out utterances that are too short
+        utterances_lengthes = unlist(lapply(utterances, function(x){length(setdiff(unlist(strsplit(tolower(x),split=" ")), custom_stopwords))}))
+        index_remove = which(utterances_lengthes<=3)
+        
+        if (length(index_remove)>0){
+          
+          utterances = utterances[-index_remove]
+          start_time = start_time[-index_remove]
+          
+        }
+        
+        # clean utterances
+        utterances = clean_utterances(utterances, my_stopwords=custom_stopwords, filler_words=filler_words)$utterances
+        
+      })
       
-      # clean utterances
-      utterances = clean_utterances(utterances, my_stopwords=custom_stopwords, filler_words=filler_words)$utterances
+    } else {
       
-    })
+      index_meeting = NA
+      golden_summary = NA 
+      meeting_name = NA
+      
+      method=NA
+      scaling_factor=NA
+      lambda=NA
+      
+      terms_list=NA
+      utterances=NA
+      start_time=NA
+      
+    }
     
-    list(method=method, scaling_factor=scaling_factor, lambda=lambda, terms_list=terms_list, utterances=utterances, start_time=start_time, index_meeting=index_meeting, golden_summary=golden_summary, meeting_name=meeting_name) 
+    list(method=method, scaling_factor=scaling_factor, lambda=lambda, terms_list=terms_list, utterances=utterances, start_time=start_time, index_meeting=index_meeting, golden_summary=golden_summary, meeting_name=meeting_name, detected_language=detected_language) 
     
   })
   
+  output$detected_language <- renderText({ 
+    paste0('-> language detected: ', initial()$detected_language)
+  })
   
   third = reactive({
     
@@ -215,7 +266,7 @@ shinyServer(function(input, output) {
     withProgress({
       setProgress(message = "Extracting keywords...")
       
-      keywords_scores = from_terms_to_keywords(terms_list=terms_list, window_size=12, to_overspan=T, to_build_on_processed=T, community_algo="none", weighted_comm=NA, directed_comm=NA, rw_length=NULL, size_threshold=NULL, degeneracy="weighted_k_core", directed_mode="all", method=method, use_elbow=FALSE, use_percentage=FALSE, percentage=0.15, number_to_retain=NA, which_nodes="all", overall_wd)$output
+      keywords_scores = from_terms_to_keywords(terms_list=terms_list, window_size=12, to_overspan=T, to_build_on_processed=T, community_algo="none", weighted_comm=NA, directed_comm=NA, rw_length=NULL, size_threshold=NULL, degeneracy="weighted_k_core", directed_mode="all", method=method, use_elbow=FALSE, use_percentage=NA, percentage=0.15, number_to_retain=NA, which_nodes="all", overall_wd)$output
       
     })
     
@@ -267,7 +318,6 @@ shinyServer(function(input, output) {
       
       
     })
-    
     
     if (boolean==FALSE){
       

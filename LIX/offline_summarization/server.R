@@ -61,6 +61,7 @@ shinyServer(function(input, output) {
     
   })
   
+  
   prelude = reactive({
     
     if (input$corpus!="custom"){
@@ -107,6 +108,8 @@ shinyServer(function(input, output) {
   
   initial = eventReactive(input$goButton,{
     
+	operating_system = .Platform$OS.type
+	
     withProgress({
       setProgress(message = "Loading text...")
       
@@ -137,9 +140,14 @@ shinyServer(function(input, output) {
         
         # if French, overwrite existing stopwords and filler words
         if (detected_language=='french') {
-          
-          custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
-          filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
+		
+		if (operating_system == 'unix'){
+			custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding='latin1')[,1]
+			filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding = 'latin1')[,1]
+		} else if (operating_system == 'windows'){
+		    custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
+			filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
+		}
           
         } else {
           
@@ -249,8 +257,8 @@ shinyServer(function(input, output) {
       
     }
     
-    list(method=method, scaling_factor=scaling_factor, lambda=lambda, terms_list=terms_list, utterances=utterances, start_time=start_time, index_meeting=index_meeting, golden_summary=golden_summary, meeting_name=meeting_name, detected_language=detected_language) 
-    
+    list(method=method, scaling_factor=scaling_factor, lambda=lambda, terms_list=terms_list, utterances=utterances, start_time=start_time, index_meeting=index_meeting, golden_summary=golden_summary, meeting_name=meeting_name, detected_language=detected_language, operating_system = operating_system)
+
   })
   
   output$detected_language <- renderText({ 
@@ -297,6 +305,8 @@ shinyServer(function(input, output) {
   
   fourth = reactive({
     
+	operating_system = initial()$operating_system
+	
     # should only react when a new meeting is summarized (goButton), or when input$size changes
     
     input$goButton
@@ -318,6 +328,7 @@ shinyServer(function(input, output) {
       
       
     })
+    
     
     if (boolean==FALSE){
       
@@ -348,9 +359,7 @@ shinyServer(function(input, output) {
         
         command = 'java -jar "rouge2.0.jar"'
         command_unix = 'java -jar rouge2.0.jar'
-        
-        operating_system = .Platform$OS.type
-        
+                
         if (operating_system=="unix"){
           
           # calls to a Linux environment - shinyapps
@@ -401,6 +410,11 @@ shinyServer(function(input, output) {
     list(rouge_scores=rouge_scores, outputs=outputs)
     
   })
+  
+  
+  
+  
+  
   
   output$keywords_scores = downloadHandler(
     filename = function() {

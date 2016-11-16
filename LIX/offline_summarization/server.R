@@ -56,7 +56,7 @@ shinyServer(function(input, output) {
            
            "ICSI_corpus" = selectInput("input_data", label = "Select ICSI test set meeting", choices = c("Bed004","Bed009","Bed016", "Bmr005","Bmr019","Bro018"),selected = "Bed004"),
            
-           "custom" =   fileInput("input_data", label = h5("Upload a .csv file or space separated .txt file with headers: `start', `end', `role', `text'", a("(example in English)",href = "https://github.com/Tixierae/examples/blob/master/example_input.csv", target="_blank"),a("(example in French)",href = "https://github.com/Tixierae/examples/blob/master/asr_info_french.txt", target="_blank")),accept=c('text/csv','text/plain'))
+           "custom" =   fileInput("input_data", label = h5("Upload a utf-8 .csv file or tab separated .txt file with headers: `start', `end', `role', `text'", a("(example in English)",href = "https://github.com/Tixierae/examples/blob/master/example_input.csv", target="_blank"),a("(example in French)",href = "https://github.com/Tixierae/examples/blob/master/asr_info_french.txt", target="_blank")),accept=c('text/csv','text/plain'))
     )  
     
   })
@@ -94,15 +94,16 @@ shinyServer(function(input, output) {
     } else {
       
       boolean = TRUE
+	  	 
       meeting_info = cbind("number of participants"=NA,"duration (mins)"=NA, "size (words)"=NA,"number of human summaries"=NA)
-      
+	  
     }
     
     list(meeting_info = meeting_info, boolean=boolean)
     
   })
   
-  
+    
   output$"meeting_info"= renderTable(prelude()$meeting_info,include.rownames=FALSE)
   
   
@@ -127,12 +128,12 @@ shinyServer(function(input, output) {
 		
 		 if (file_ext(input$input_data$name) == 'csv'){
         
-			 asr_info = read.csv(to_pass, header=TRUE)
+			 asr_info = read.csv(to_pass, header=TRUE, fileEncoding = 'utf-8')
 		
 		 } else if (file_ext(input$input_data$name) == 'txt'){
 		
-			asr_info = read.table(to_pass, header=TRUE)
-		
+			asr_info = read.delim(to_pass, stringsAsFactors=FALSE, header=TRUE, fileEncoding = 'utf-8')
+			
 		}
         
         # detect language and output the results (in any case)
@@ -142,8 +143,10 @@ shinyServer(function(input, output) {
         if (detected_language=='french') {
 		
 		if (operating_system == 'unix'){
-			custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding='latin1')[,1]
-			filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding = 'latin1')[,1]
+			# custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding='latin1')[,1]
+		  custom_stopwords = read.table('custom_stopwords_full_french.txt',header=FALSE,stringsAsFactors=FALSE,fileEncoding='utf-8')[,1]
+			#filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding = 'latin1')[,1]
+			filler_words = read.table('filler_words_french.txt',header=FALSE,stringsAsFactors=FALSE,fileEncoding='utf-8')[,1]
 		} else if (operating_system == 'windows'){
 		    custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
 			filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]

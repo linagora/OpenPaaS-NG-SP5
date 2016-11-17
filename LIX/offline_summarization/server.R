@@ -144,9 +144,9 @@ shinyServer(function(input, output) {
 		
 		if (operating_system == 'unix'){
 			# custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding='latin1')[,1]
-		  custom_stopwords = read.table('custom_stopwords_full_french.txt',header=FALSE,stringsAsFactors=FALSE,fileEncoding='utf-8')[,1]
+		  custom_stopwords = readLines('custom_stopwords_full_french.txt', encoding='utf-8')
 			#filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE, encoding = 'latin1')[,1]
-			filler_words = read.table('filler_words_french.txt',header=FALSE,stringsAsFactors=FALSE,fileEncoding='utf-8')[,1]
+			filler_words = readLines('filler_words_french.txt', encoding='utf-8')
 		} else if (operating_system == 'windows'){
 		    custom_stopwords = read.csv('custom_stopwords_full_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
 			filler_words = read.csv('filler_words_french.csv',header=FALSE,stringsAsFactors=FALSE)[,1]
